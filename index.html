@@ -1,0 +1,1363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Hearts &amp; Minds: Vietnam 1961–1975 · Cognitive Strategy Simulation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Stardos+Stencil:wght@400;700&family=Oswald:wght@300;400;500;600;700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* War-room / aged-map palette */
+    --bg:        #16170f;
+    --bg-2:      #1d1f15;
+    --panel:     #e9ddc2;     /* aged parchment */
+    --panel-2:   #ddceae;
+    --ink:       #2a2417;     /* dark sepia ink */
+    --ink-soft:  #5a503c;
+    --line:      #b9a47c;
+    --gold:      #c8a02a;
+    --gold-deep: #8a6d16;
+    --usa:       #1d3a6b;     /* navy blue */
+    --svn:       #c8a02a;     /* gold */
+    --nvn:       #9e2b25;     /* red */
+    --wc:        #586170;     /* slate */
+    --usa-soft:  #6f97cf;
+    --track-usd: #2f6fb3;
+    --track-svl: #b8851f;
+    --track-nvw: #b23b30;
+    --track-esc: #d97a2b;
+    --track-is:  #2f9e8f;
+    --good:      #4f8a3f;
+    --bad:       #b23b30;
+    --shadow:    0 6px 22px rgba(0,0,0,.45);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 700px at 70% -5%, rgba(110,151,207,.07), transparent 60%),
+      radial-gradient(900px 600px at 0% 100%, rgba(200,160,42,.06), transparent 55%),
+      linear-gradient(160deg, var(--bg), var(--bg-2));
+    color:var(--panel);
+    font-family:'Spectral', Georgia, serif;
+    min-height:100vh;
+    line-height:1.5;
+  }
+  /* faint paper-grain texture */
+  body::before{
+    content:""; position:fixed; inset:0; pointer-events:none; opacity:.05; z-index:0;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+  .wrap{position:relative; z-index:1; max-width:1500px; margin:0 auto; padding:18px 18px 60px;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    border:1px solid var(--line);
+    background:
+      linear-gradient(180deg, rgba(31,33,22,.9), rgba(15,16,10,.95));
+    box-shadow:var(--shadow);
+    border-radius:10px;
+    padding:14px 18px;
+    display:flex; flex-wrap:wrap; gap:14px 26px; align-items:center; justify-content:space-between;
+  }
+  .brand h1{
+    font-family:'Stardos Stencil', sans-serif; font-weight:700;
+    margin:0; letter-spacing:1.5px; line-height:1;
+    font-size:clamp(20px, 3.2vw, 34px);
+    color:var(--panel);
+    text-shadow:0 2px 0 #000, 0 0 22px rgba(200,160,42,.18);
+  }
+  .brand .sub{
+    font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:3px;
+    font-size:11px; color:var(--gold); margin-top:6px;
+  }
+  .clock{display:flex; gap:14px; align-items:center; flex-wrap:wrap;}
+  .yearbox{
+    border:2px solid var(--gold-deep); border-radius:8px; padding:6px 14px; text-align:center;
+    background:rgba(200,160,42,.08);
+  }
+  .yearbox .yr{font-family:'Stardos Stencil',sans-serif; font-size:30px; line-height:1; color:var(--gold);}
+  .yearbox .ph{font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:#c9bfa6;}
+
+  /* turn order chips */
+  .order{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:1px;
+    font-size:12px; padding:7px 12px 6px; border-radius:7px; border:2px solid transparent;
+    background:rgba(255,255,255,.05); color:#cdc4ad; opacity:.55; cursor:default; transition:.18s;
+    display:flex; flex-direction:column; align-items:center; gap:2px; min-width:74px;
+  }
+  .chip small{font-size:9px; letter-spacing:.5px; opacity:.8; font-weight:400;}
+  .chip.active{opacity:1; transform:translateY(-2px);}
+  .chip[data-f="USA"].active{border-color:var(--usa-soft); background:rgba(29,58,107,.45); color:#dbe7fa;}
+  .chip[data-f="SVN"].active{border-color:var(--svn); background:rgba(200,160,42,.25); color:#f6ecca;}
+  .chip[data-f="NVN"].active{border-color:var(--nvn); background:rgba(158,43,37,.35); color:#f6d4d1;}
+  .chip[data-f="WC"].active{border-color:#9aa6b6; background:rgba(88,97,112,.4); color:#e3e8ef;}
+
+  /* ---------- Layout ---------- */
+  .layout{display:grid; grid-template-columns: 1.55fr 1fr; gap:18px; margin-top:18px;}
+  @media (max-width:1080px){ .layout{grid-template-columns:1fr;} }
+
+  .panel{
+    border:1px solid var(--line); border-radius:10px; box-shadow:var(--shadow);
+    background:linear-gradient(180deg, rgba(31,33,22,.78), rgba(15,16,10,.85));
+    overflow:hidden;
+  }
+  .panel h2{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:2.5px;
+    font-size:13px; margin:0; padding:11px 16px; color:#0f100a;
+    background:linear-gradient(180deg,var(--gold), var(--gold-deep));
+    border-bottom:1px solid #000;
+  }
+  .panel .body{padding:14px 16px;}
+
+  /* ---------- Board ---------- */
+  .board-img-wrap{position:relative; background:#0c0d08;}
+  .board-img-wrap img{width:100%; display:block;}
+  .board-fallback{display:none; padding:40px 20px; text-align:center; color:#cdc4ad; font-family:'Oswald',sans-serif;}
+  .board-img-wrap.broken img{display:none;}
+  .board-img-wrap.broken .board-fallback{display:block;}
+
+  /* tracks */
+  .tracks{padding:14px 16px 4px; display:grid; gap:13px;}
+  .track .tlabel{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1.4px; font-size:11.5px;
+    color:#d7cdb3; margin-bottom:4px;
+  }
+  .track .tlabel b{font-family:'Stardos Stencil',sans-serif; font-size:15px; letter-spacing:0;}
+  .bar{position:relative; height:18px; border-radius:4px; background:rgba(0,0,0,.4); border:1px solid #000; overflow:hidden;}
+  .bar .fill{position:absolute; left:0; top:0; bottom:0; transition:width .5s cubic-bezier(.2,.8,.2,1); opacity:.92;}
+  .bar .ticks{position:absolute; inset:0; display:flex; pointer-events:none;}
+  .bar .ticks span{flex:1; border-right:1px solid rgba(255,255,255,.09);}
+  .bar .ticks span:last-child{border:none;}
+  .u-usd .fill{background:linear-gradient(90deg,#2f6fb3,#5b97d8);}
+  .u-svl .fill{background:linear-gradient(90deg,#9c7016,#cf9c2c);}
+  .u-nvw .fill{background:linear-gradient(90deg,#7f221c,#c0463a);}
+  .u-esc .fill{background:linear-gradient(90deg,#b85f1c,#e89043);}
+  .u-is  .fill{background:linear-gradient(90deg,#1f7d70,#36b3a1);}
+
+  /* Communist patronage slider */
+  .cp-wrap{margin:10px 16px 16px;}
+  .cp-bar{position:relative; height:20px; border-radius:4px; border:1px solid #000;
+    background:linear-gradient(90deg,#9e2b25 0%, #b08a3a 50%, #9e2b25 100%);}
+  .cp-bar .mid{position:absolute; left:50%; top:-3px; bottom:-3px; width:2px; background:#000; opacity:.6;}
+  .cp-bar .marker{position:absolute; top:-4px; width:10px; height:28px; border-radius:3px; background:#11120b;
+    border:2px solid var(--gold); transform:translateX(-50%); transition:left .5s; box-shadow:0 0 8px rgba(0,0,0,.6);}
+  .cp-ends{display:flex; justify-content:space-between; font-family:'Oswald',sans-serif; font-size:10.5px;
+    letter-spacing:1.5px; text-transform:uppercase; color:#cdc4ad; margin-top:4px;}
+
+  /* RGI gauge */
+  .rgi{
+    margin:4px 16px 18px; border:1px solid var(--line); border-radius:9px; padding:13px 15px;
+    background:linear-gradient(180deg, rgba(79,138,63,.10), rgba(0,0,0,.18));
+    display:flex; gap:16px; align-items:center;
+  }
+  .rgi .num{font-family:'Stardos Stencil',sans-serif; font-size:46px; line-height:.9; color:#e9ddc2; min-width:96px; text-align:center;}
+  .rgi .num small{display:block; font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:2px; color:#9fc18e;}
+  .rgi .desc{flex:1;}
+  .rgi .desc .t{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:var(--gold);}
+  .rgi .desc .s{font-size:14px; color:#e4dac0; margin-top:3px;}
+  .rgi .desc .s b{color:#fff;}
+
+  /* resources strip */
+  .res{display:flex; flex-wrap:wrap; gap:8px; padding:0 16px 16px;}
+  .res .pip{
+    font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:.5px; text-transform:uppercase;
+    border:1px solid var(--line); border-radius:6px; padding:5px 9px; background:rgba(0,0,0,.22); color:#d7cdb3;
+  }
+  .res .pip b{font-family:'Stardos Stencil',sans-serif; font-size:14px; color:#fff; margin-left:5px;}
+
+  /* ---------- Control / hand ---------- */
+  .faction-banner{
+    padding:13px 16px; display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border-bottom:1px solid var(--line);
+  }
+  .faction-banner .who{font-family:'Stardos Stencil',sans-serif; font-size:22px; letter-spacing:1px;}
+  .faction-banner .role{font-family:'Spectral',serif; font-style:italic; font-size:12.5px; color:#cdc4ad; max-width:330px;}
+  .ap{
+    text-align:center; border:2px solid var(--gold-deep); border-radius:9px; padding:6px 12px;
+    background:rgba(200,160,42,.1); min-width:92px;
+  }
+  .ap .v{font-family:'Stardos Stencil',sans-serif; font-size:26px; line-height:1; color:var(--gold);}
+  .ap .l{font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; color:#c9bfa6;}
+
+  .filters{display:flex; flex-wrap:wrap; gap:6px; padding:11px 16px 4px;}
+  .filters button{
+    font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1px; text-transform:uppercase;
+    border:1px solid var(--line); background:rgba(0,0,0,.2); color:#cdc4ad; border-radius:20px;
+    padding:5px 11px; cursor:pointer; transition:.15s;
+  }
+  .filters button:hover{background:rgba(200,160,42,.18); color:#fff;}
+  .filters button.on{background:var(--gold); color:#11120b; border-color:var(--gold);}
+
+  .hand{padding:8px 14px 16px; display:grid; gap:9px; max-height:560px; overflow-y:auto;}
+  .hand::-webkit-scrollbar{width:9px;}
+  .hand::-webkit-scrollbar-thumb{background:#5a503c; border-radius:6px;}
+
+  .card{
+    position:relative; border:1px solid var(--line); border-left-width:6px; border-radius:8px;
+    background:linear-gradient(180deg, var(--panel), var(--panel-2)); color:var(--ink);
+    padding:10px 12px 11px; cursor:pointer; transition:transform .12s, box-shadow .12s; box-shadow:0 2px 6px rgba(0,0,0,.3);
+  }
+  .card:hover{transform:translateY(-2px); box-shadow:0 8px 18px rgba(0,0,0,.45);}
+  .card.disabled{opacity:.5; cursor:not-allowed; filter:grayscale(.4);}
+  .card.disabled:hover{transform:none; box-shadow:0 2px 6px rgba(0,0,0,.3);}
+  .card .chead{display:flex; justify-content:space-between; gap:8px; align-items:flex-start;}
+  .card .cid{font-family:'Oswald',sans-serif; font-weight:700; font-size:11px; letter-spacing:1px; color:#fff;
+    padding:2px 7px; border-radius:4px; background:var(--ink-soft);}
+  .card .ctitle{font-family:'Oswald',sans-serif; font-weight:600; font-size:14px; letter-spacing:.3px; text-transform:uppercase; line-height:1.1; flex:1;}
+  .card .cost{font-family:'Stardos Stencil',sans-serif; font-size:18px; color:var(--gold-deep); white-space:nowrap;}
+  .card .cost small{font-family:'Oswald',sans-serif; font-size:8.5px; letter-spacing:.5px; display:block; text-align:right; color:var(--ink-soft);}
+  .card .ctype{font-family:'Oswald',sans-serif; font-size:9.5px; letter-spacing:2px; text-transform:uppercase; color:var(--ink-soft); margin:4px 0 5px;}
+  .card .ceff{font-size:13px; color:#3a3320; line-height:1.35;}
+  .card .deltas{display:flex; flex-wrap:wrap; gap:5px; margin-top:7px;}
+  .card .d{font-family:'Oswald',sans-serif; font-size:10.5px; font-weight:600; letter-spacing:.5px;
+    padding:2px 7px; border-radius:11px; border:1px solid;}
+  .card .d.up{color:#2c5a22; border-color:#7aa86a; background:rgba(79,138,63,.16);}
+  .card .d.dn{color:#7e201a; border-color:#c98178; background:rgba(178,59,48,.14);}
+  .card .req{font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:.5px; color:#8a3026; margin-top:6px; text-transform:uppercase;}
+  .card .special{font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:.5px; color:#fff; background:var(--nvn);
+    padding:3px 8px; border-radius:4px; margin-top:7px; display:inline-block;}
+  /* category accent on left border */
+  .card.cat-M{border-left-color:var(--nvn);}
+  .card.cat-E{border-left-color:var(--track-esc);}
+  .card.cat-I{border-left-color:#3c6e63;}
+  .card.cat-D{border-left-color:var(--usa);}
+
+  .empty{font-family:'Oswald',sans-serif; color:#cdc4ad; text-align:center; padding:26px 10px; letter-spacing:1px; font-size:13px;}
+
+  /* footer controls */
+  .controls{display:flex; gap:10px; flex-wrap:wrap; padding:0 16px 16px;}
+  .btn{
+    font-family:'Oswald',sans-serif; font-weight:600; text-transform:uppercase; letter-spacing:1.5px; font-size:13px;
+    border:none; border-radius:8px; padding:12px 18px; cursor:pointer; transition:.15s; flex:1; min-width:140px;
+  }
+  .btn.primary{background:linear-gradient(180deg,var(--gold),var(--gold-deep)); color:#11120b;}
+  .btn.primary:hover{filter:brightness(1.08);}
+  .btn.ghost{background:rgba(255,255,255,.06); color:#cdc4ad; border:1px solid var(--line);}
+  .btn.ghost:hover{background:rgba(255,255,255,.12); color:#fff;}
+
+  /* ---------- Log ---------- */
+  .log{margin-top:18px;}
+  .log .body{max-height:230px; overflow-y:auto;}
+  .log .entry{padding:7px 0; border-bottom:1px dashed rgba(185,164,124,.3); font-size:13.5px;}
+  .log .entry:last-child{border:none;}
+  .log .entry .yr{font-family:'Oswald',sans-serif; font-weight:700; color:var(--gold); margin-right:8px; font-size:12px; letter-spacing:1px;}
+  .log .entry .f{font-family:'Oswald',sans-serif; font-weight:600; font-size:11px; letter-spacing:1px; padding:1px 6px; border-radius:4px; margin-right:7px;}
+  .log .entry .f.USA{background:rgba(29,58,107,.5); color:#cfe0fb;}
+  .log .entry .f.SVN{background:rgba(200,160,42,.35); color:#f6ecca;}
+  .log .entry .f.NVN{background:rgba(158,43,37,.45); color:#f6d4d1;}
+  .log .entry .f.WC{background:rgba(88,97,112,.5); color:#e3e8ef;}
+  .log .entry .f.EVENT{background:#11120b; color:var(--gold); border:1px solid var(--gold-deep);}
+  .log .entry.major{background:rgba(200,160,42,.07); border-radius:6px; padding:8px 10px;}
+
+  /* ---------- Notes ---------- */
+  details.notes{margin-top:18px;}
+  details.notes summary{
+    cursor:pointer; font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:2.5px; font-size:13px;
+    color:#0f100a; padding:11px 16px; background:linear-gradient(180deg,var(--gold), var(--gold-deep));
+    border-radius:10px 10px 0 0; list-style:none;
+  }
+  details.notes[open] summary{border-radius:10px 10px 0 0;}
+  details.notes summary::-webkit-details-marker{display:none;}
+  details.notes .body{
+    border:1px solid var(--line); border-top:none; border-radius:0 0 10px 10px; padding:18px 20px;
+    background:linear-gradient(180deg, rgba(31,33,22,.78), rgba(15,16,10,.85));
+  }
+  .notes h3{font-family:'Oswald',sans-serif; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); font-size:13px; margin:16px 0 6px;}
+  .notes h3:first-child{margin-top:0;}
+  .notes p, .notes li{font-size:14px; color:#e0d6bd;}
+  .notes .eww{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-top:8px;}
+  @media(max-width:760px){.notes .eww{grid-template-columns:1fr;}}
+  .notes .eww div{border:1px solid var(--line); border-radius:8px; padding:11px 13px; background:rgba(0,0,0,.18);}
+  .notes .eww b{font-family:'Oswald',sans-serif; letter-spacing:1.5px; text-transform:uppercase; font-size:11px; color:var(--gold);}
+  .notes .placeholder{border:1px dashed var(--gold-deep); border-radius:8px; padding:14px; margin-top:8px;
+    background:rgba(200,160,42,.06); font-style:italic; color:#cdc4ad; font-size:13.5px;}
+
+  /* ---------- Verdict modal ---------- */
+  .modal{position:fixed; inset:0; background:rgba(8,9,5,.86); display:none; align-items:center; justify-content:center; z-index:50; padding:20px;}
+  .modal.show{display:flex;}
+  .modal .card-modal{
+    max-width:620px; width:100%; border:2px solid var(--gold-deep); border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,.7);
+    background:linear-gradient(180deg, var(--bg-2), #0d0e08); padding:0; overflow:hidden;
+  }
+  .modal .vhead{padding:20px 24px; border-bottom:1px solid var(--line); text-align:center;}
+  .modal .vhead .stamp{font-family:'Stardos Stencil',sans-serif; font-size:30px; letter-spacing:1px;}
+  .modal .vhead .sub{font-family:'Oswald',sans-serif; letter-spacing:3px; text-transform:uppercase; font-size:11px; color:var(--gold); margin-top:6px;}
+  .modal .vbody{padding:20px 24px; font-size:15px; color:#e4dac0;}
+  .modal .vbody .stat{display:flex; justify-content:space-between; padding:5px 0; border-bottom:1px dashed rgba(185,164,124,.3); font-family:'Oswald',sans-serif; letter-spacing:.5px; font-size:13px;}
+  .modal .vbody .stat b{font-family:'Stardos Stencil',sans-serif;}
+  .modal .vfoot{padding:0 24px 22px; display:flex; gap:10px;}
+  .verdict-free .stamp{color:#7fae6c;}
+  .verdict-drv .stamp{color:#c0463a;}
+  .verdict-stale .stamp{color:var(--gold);}
+
+  .credit{text-align:center; font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:#6f6750; margin-top:26px;}
+
+  /* ---------- Fullscreen sheets (setup / deck / how-to) ---------- */
+  .sheet{position:fixed; inset:0; z-index:60; background:rgba(8,9,5,.93); display:none; overflow-y:auto; padding:26px 18px 60px;}
+  .sheet.show{display:block;}
+  .sheet-inner{max-width:1200px; margin:0 auto;}
+  .sheet-head{display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; flex-wrap:wrap;}
+  .sheet-head .t{font-family:'Stardos Stencil',sans-serif; font-size:clamp(20px,3vw,30px); letter-spacing:1px; color:var(--gold);}
+  .sheet-close{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:1.5px; font-size:12px; border:1px solid var(--line); background:rgba(255,255,255,.06); color:#e9ddc2; border-radius:8px; padding:9px 16px; cursor:pointer;}
+  .sheet-close:hover{background:rgba(255,255,255,.13);}
+
+  /* setup */
+  .setup-panel{border:1px solid var(--line); border-radius:12px; background:linear-gradient(180deg, rgba(31,33,22,.96), rgba(13,14,8,.98)); box-shadow:var(--shadow); overflow:hidden;}
+  .setup-hero{padding:26px 26px 18px; border-bottom:1px solid var(--line); text-align:center; background:radial-gradient(600px 240px at 50% -40%, rgba(200,160,42,.16), transparent);}
+  .setup-hero h1{font-family:'Stardos Stencil',sans-serif; font-size:clamp(26px,5vw,46px); margin:0; letter-spacing:1.5px; text-shadow:0 2px 0 #000;}
+  .setup-hero .sub{font-family:'Oswald',sans-serif; letter-spacing:4px; text-transform:uppercase; font-size:12px; color:var(--gold); margin-top:8px;}
+  .setup-body{padding:22px 26px 26px;}
+  .setup-step{margin-bottom:22px;}
+  .setup-step .lbl{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:2px; font-size:12px; color:var(--gold); margin-bottom:10px;}
+  .count-row{display:flex; gap:10px; flex-wrap:wrap;}
+  .count-row button{flex:1; min-width:84px; font-family:'Stardos Stencil',sans-serif; font-size:24px; padding:13px 8px; border-radius:10px; border:2px solid var(--line); background:rgba(0,0,0,.25); color:#e9ddc2; cursor:pointer; transition:.15s;}
+  .count-row button small{display:block; font-family:'Oswald',sans-serif; font-size:10px; letter-spacing:1.5px; color:#b6ac92; margin-top:4px;}
+  .count-row button.on{border-color:var(--gold); background:rgba(200,160,42,.22); color:#fff;}
+  .presets{display:flex; gap:8px; flex-wrap:wrap;}
+  .presets button{font-family:'Oswald',sans-serif; font-size:11.5px; letter-spacing:1px; text-transform:uppercase; border:1px solid var(--line); background:rgba(0,0,0,.22); color:#cdc4ad; border-radius:20px; padding:7px 13px; cursor:pointer; transition:.15s;}
+  .presets button:hover{background:rgba(200,160,42,.18); color:#fff;}
+  .assign-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+  @media(max-width:680px){.assign-grid{grid-template-columns:1fr;}}
+  .assign{border:1px solid var(--line); border-left-width:6px; border-radius:10px; padding:12px 14px; background:rgba(0,0,0,.2);}
+  .assign .fn{font-family:'Stardos Stencil',sans-serif; font-size:18px;}
+  .assign .fr{font-size:12px; font-style:italic; color:#c1b79d; margin:3px 0 9px;}
+  .assign select{width:100%; font-family:'Oswald',sans-serif; font-size:13px; padding:8px; border-radius:7px; border:1px solid var(--line); background:#16170f; color:#e9ddc2;}
+  .assign[data-f="USA"]{border-left-color:var(--usa);} .assign[data-f="USA"] .fn{color:var(--usa-soft);}
+  .assign[data-f="SVN"]{border-left-color:var(--svn);} .assign[data-f="SVN"] .fn{color:var(--svn);}
+  .assign[data-f="NVN"]{border-left-color:var(--nvn);} .assign[data-f="NVN"] .fn{color:#d98f86;}
+  .assign[data-f="WC"]{border-left-color:#9aa6b6;} .assign[data-f="WC"] .fn{color:#cdd4de;}
+  .team-note{font-size:13px; color:#c1b79d; font-style:italic; margin-top:10px; line-height:1.5;}
+  .name-in{font-family:'Oswald',sans-serif; font-size:13px; padding:8px 10px; border-radius:7px; border:1px solid var(--line); background:#16170f; color:#e9ddc2;}
+  .begin{width:100%; margin-top:6px;}
+
+  /* deck library */
+  .deck-tools{display:flex; gap:7px; flex-wrap:wrap; margin-bottom:8px;}
+  .deck-tools button{font-family:'Oswald',sans-serif; font-size:11px; letter-spacing:1px; text-transform:uppercase; border:1px solid var(--line); background:rgba(0,0,0,.25); color:#cdc4ad; border-radius:20px; padding:6px 12px; cursor:pointer; transition:.15s;}
+  .deck-tools button:hover{background:rgba(200,160,42,.18); color:#fff;}
+  .deck-tools button.on{background:var(--gold); color:#11120b; border-color:var(--gold);}
+  .deck-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(255px,1fr)); gap:12px;}
+  .deck-draw{display:flex; gap:18px; align-items:center; flex-wrap:wrap; border:1px solid var(--line); border-radius:10px; padding:16px; margin-bottom:16px; background:rgba(0,0,0,.28);}
+  .pile{width:92px; height:132px; border-radius:10px; border:2px solid var(--gold-deep); cursor:pointer; position:relative; flex:none; transition:.15s;
+    background:repeating-linear-gradient(45deg,#1d3a6b,#1d3a6b 9px,#16294a 9px,#16294a 18px); box-shadow:3px 3px 0 rgba(0,0,0,.55), 6px 6px 0 rgba(0,0,0,.3);}
+  .pile:hover{transform:translateY(-3px) rotate(-1deg);}
+  .pile .star{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:'Stardos Stencil',sans-serif; color:var(--gold); font-size:34px; text-shadow:0 2px 4px #000;}
+  .pile .pl{position:absolute; bottom:6px; left:0; right:0; text-align:center; font-family:'Oswald',sans-serif; font-size:9px; letter-spacing:1.5px; color:#ccd8ef; text-transform:uppercase;}
+  .draw-out{flex:1; min-width:255px; max-width:380px;}
+  .deck-fac{font-family:'Oswald',sans-serif; font-size:9.5px; letter-spacing:1.5px; text-transform:uppercase; font-weight:700; padding:1px 6px; border-radius:4px; color:#fff;}
+  .deck-fac.USA{background:var(--usa);} .deck-fac.SVN{background:var(--gold-deep);} .deck-fac.NVN{background:var(--nvn);} .deck-fac.WC{background:var(--wc);}
+
+  /* how-to document */
+  .howto-doc{border:1px solid var(--line); border-radius:10px; padding:22px 26px; background:linear-gradient(180deg, rgba(31,33,22,.8), rgba(15,16,10,.88));}
+  .howto-doc h3{font-family:'Oswald',sans-serif; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); font-size:14px; margin:22px 0 6px;}
+  .howto-doc h3:first-child{margin-top:0;}
+  .howto-doc p,.howto-doc li{font-size:14.5px; color:#e2d8bf; line-height:1.65;}
+  .howto-doc b{color:#fff;}
+  .howto-doc .pl{border:1px solid var(--line); border-radius:9px; padding:13px 16px; background:rgba(0,0,0,.22); margin:10px 0;}
+  .howto-doc ul{margin:6px 0; padding-left:20px;}
+
+  /* controller badge */
+  .ctrlbadge{font-family:'Oswald',sans-serif; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase; color:#11120b; background:var(--gold); padding:2px 9px; border-radius:11px; display:inline-block; margin-top:6px;}
+  .ctrlbadge.open{background:rgba(255,255,255,.1); color:#cdc4ad; border:1px solid var(--line);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <h1>HEARTS &amp; MINDS</h1>
+      <div class="sub">Vietnam 1961–1975 · A DIMEFIL Cognitive Strategy Simulation</div>
+    </div>
+    <div class="clock">
+      <div class="order" id="order"></div>
+      <div class="yearbox">
+        <div class="yr" id="yearDisp">1961</div>
+        <div class="ph" id="phaseDisp">Phase I</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+
+    <!-- ===== BOARD ===== -->
+    <div>
+      <section class="panel">
+        <h2>Theater of Operations</h2>
+        <div class="board-img-wrap" id="boardWrap">
+          <img src="Hearts_and_Minds_Map.png" alt="Hearts &amp; Minds Vietnam map board"
+               onerror="document.getElementById('boardWrap').classList.add('broken')" />
+          <div class="board-fallback">
+            <strong>Map asset not found.</strong><br>
+            Upload <code>Hearts_and_Minds_Map.png</code> alongside this file.
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" style="margin-top:18px;">
+        <h2>Strategic Tracks</h2>
+        <div class="tracks" id="tracks"></div>
+
+        <div class="cp-wrap">
+          <div class="track" style="margin-bottom:4px;">
+            <div class="tlabel"><span>Communist Patronage</span><span id="cpReadout"></span></div>
+          </div>
+          <div class="cp-bar"><div class="mid"></div><div class="marker" id="cpMarker"></div></div>
+          <div class="cp-ends"><span>◀ China</span><span>USSR ▶</span></div>
+        </div>
+
+        <div class="rgi">
+          <div class="num" id="rgiNum">·<small>RGI / 100</small></div>
+          <div class="desc">
+            <div class="t">Rural Governance Index</div>
+            <div class="s" id="rgiText"></div>
+          </div>
+        </div>
+
+        <div class="res" id="resStrip"></div>
+      </section>
+    </div>
+
+    <!-- ===== CONTROL ===== -->
+    <div>
+      <section class="panel">
+        <h2>Decision Cycle</h2>
+        <div class="faction-banner" id="factionBanner"></div>
+        <div class="filters" id="filters"></div>
+        <div class="hand" id="hand"></div>
+        <div class="controls">
+          <button class="btn primary" id="endTurnBtn">End Turn ▸</button>
+          <button class="btn ghost" id="verdictBtn">Assess Outcome</button>
+          <button class="btn ghost" id="deckBtn">Card Library</button>
+          <button class="btn ghost" id="howBtn">How to Play</button>
+          <button class="btn ghost" id="resetBtn">Restart</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ===== LOG ===== -->
+  <section class="panel log">
+    <h2>Operational Log</h2>
+    <div class="body" id="log"></div>
+  </section>
+
+  <!-- ===== DESIGNER / COGNITIVE NOTES ===== -->
+  <details class="notes" open>
+    <summary>Designer's Notes · The Cognitive Model</summary>
+    <div class="body">
+      <h3>The Core Thesis</h3>
+      <p>This simulation is built around a single argument from the design conversations: if the Free World side does not have the trajectory moving in the right direction by <b>1965</b>, the war cannot be won by escalation afterward. The headline metric is the <b>Rural Governance Index (RGI)</b>, a proxy for the designer's plain-language test: <i>do rural villages have effective governance at night?</i> Body count is deliberately <i>not</i> the scoreboard.</p>
+
+      <h3>Ends · Ways · Means</h3>
+      <div class="eww">
+        <div><b>Goal (Ends)</b><p style="margin:6px 0 0;">South Vietnamese rural villages become resilient to insurgency; the Viet Minh / Viet Cong find less value in the hard labor of insurgency, forcing the North to seek other means.</p></div>
+        <div><b>Ways</b><p style="margin:6px 0 0;">Develop respected, democratically legitimate leadership in South Vietnam at every level, not a coerced regime competing for hearts and minds by force.</p></div>
+        <div><b>Means</b><p style="margin:6px 0 0;">Party development, popular-issue gathering, and legitimate financial and civic support to local officials who actually win elections.</p></div>
+      </div>
+
+      <h3>How RGI Is Computed</h3>
+      <p>RGI = 0.50 × South Vietnam Legitimacy + 0.25 × U.S. Domestic Support + 0.15 × (100 − Escalation) + 0.10 × (100 − North Vietnam Will). Legitimacy is the center of gravity; escalation and enemy will erode governance even when "winning" militarily. The Ho Chi Minh Trail choice from Wayne's note, to interdict it by force (Highway 9 / Khe Sanh, heavy casualties, angers China) <i>or</i> to erode the will to carry it, is modeled by the tension between military trail-bombing cards (escalation, lost international support) and information/economic cards that drain North Vietnamese will.</p>
+
+    </div>
+  </details>
+
+  <div class="credit">Hearts &amp; Minds: Vietnam 1961–1975 · Cognitive Strategy Game · Companion to the tabletop edition</div>
+</div>
+
+<!-- ===== VERDICT MODAL ===== -->
+<div class="modal" id="modal">
+  <div class="card-modal" id="modalCard">
+    <div class="vhead">
+      <div class="stamp" id="vStamp"></div>
+      <div class="sub" id="vSub"></div>
+    </div>
+    <div class="vbody" id="vBody"></div>
+    <div class="vfoot">
+      <button class="btn primary" id="vClose">Continue</button>
+      <button class="btn ghost" id="vRestart">New Game</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== SETUP / LOBBY ===== -->
+<div class="sheet show" id="setup">
+  <div class="sheet-inner" style="max-width:780px">
+    <div class="setup-panel">
+      <div class="setup-hero">
+        <h1>HEARTS &amp; MINDS</h1>
+        <div class="sub">Vietnam 1961–1975 · Campaign Setup</div>
+      </div>
+      <div class="setup-body">
+        <div class="setup-step">
+          <div class="lbl">Quick presets</div>
+          <div class="presets" id="presetRow">
+            <button data-p="solo">Solo · run the table</button>
+            <button data-p="2team">2 Players · Free World vs Communist</button>
+            <button data-p="3p">3 Players · USA + Saigon vs Hanoi</button>
+            <button data-p="4p">4 Players · one faction each</button>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="lbl">1 · How many human players?</div>
+          <div class="count-row" id="countRow">
+            <button data-n="1">1<small>Solo</small></button>
+            <button data-n="2">2<small>Duel</small></button>
+            <button data-n="3">3<small>Trio</small></button>
+            <button data-n="4">4<small>Full table</small></button>
+          </div>
+        </div>
+        <div class="setup-step">
+          <div class="lbl">2 · Player names (optional)</div>
+          <div id="nameRow" style="display:grid; gap:8px;"></div>
+        </div>
+        <div class="setup-step">
+          <div class="lbl">3 · Assign the four factions</div>
+          <div class="assign-grid" id="assignGrid"></div>
+          <div class="team-note">Free World coalition: United States + South Vietnam. Opposition: North Vietnam. The White Cell (UN · USSR · China · SEATO) is the outside world and works well as a neutral control seat. Any faction left as an <b>Open seat</b> is simply passed around the table (hotseat) when its turn comes.</div>
+        </div>
+        <button class="btn primary begin" id="beginBtn">Begin Campaign ▸</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CARD LIBRARY / VIRTUAL DECK ===== -->
+<div class="sheet" id="deckSheet">
+  <div class="sheet-inner">
+    <div class="sheet-head">
+      <div class="t">Card Library · Virtual Deck</div>
+      <button class="sheet-close" data-close="deckSheet">Close ✕</button>
+    </div>
+    <div class="deck-draw">
+      <div class="pile" id="drawPile" title="Click to draw a card">
+        <div class="star">★</div><div class="pl">Draw</div>
+      </div>
+      <div class="draw-out" id="drawOut">
+        <div class="empty" style="text-align:left; padding:10px 0;">Click the deck to draw a random card from the current filter, the way you would flip the top of a shuffled stack at the table.</div>
+      </div>
+    </div>
+    <div class="deck-tools" id="deckFactionFilter"></div>
+    <div class="deck-tools" id="deckCatFilter"></div>
+    <div class="deck-grid" id="deckGrid"></div>
+  </div>
+</div>
+
+<!-- ===== HOW TO PLAY ===== -->
+<div class="sheet" id="howSheet">
+  <div class="sheet-inner" style="max-width:920px">
+    <div class="sheet-head">
+      <div class="t">How to Play</div>
+      <button class="sheet-close" data-close="howSheet">Close ✕</button>
+    </div>
+    <div class="howto-doc">
+      <h3>The Objective</h3>
+      <p>This is a cognitive strategy game, not a body-count game. The question it asks is the one at the heart of the real war: <b>can South Vietnam become a legitimate state that governs its own villages, by day and by night?</b> The Free World side (United States and South Vietnam) wins by building that legitimacy and resilience. The Communist side (North Vietnam, with the wider world tilting through the White Cell) wins by outlasting American patience or hollowing out Saigon's legitimacy before it can take root.</p>
+
+      <h3>The Headline Metric: Rural Governance Index</h3>
+      <p>The large gauge under the map is the <b>Rural Governance Index (RGI)</b>, scored 0 to 100. It is the plain-language test from the design notes: do the villages have effective governance at night? It is weighted heavily toward South Vietnamese legitimacy, with escalation and enemy will pulling it down even when you appear to be winning militarily. Watch the <b>1965 checkpoint</b>: if the trajectory is not already turning by then, escalation afterward will not save it.</p>
+
+      <h3>The Five Strategic Tracks</h3>
+      <ul>
+        <li><b>U.S. Domestic Support</b> · the American public's patience. If it collapses, the war ends regardless of the map.</li>
+        <li><b>South Vietnam Legitimacy</b> · the center of gravity. This is what you are really fighting for.</li>
+        <li><b>North Vietnam Will</b> · Hanoi's resolve to keep paying the price.</li>
+        <li><b>Escalation Level</b> · the temperature of the war. High escalation risks Chinese and Soviet intervention.</li>
+        <li><b>International Support</b> · world and UN opinion.</li>
+      </ul>
+      <p>The <b>Communist Patronage</b> slider shows whether Hanoi leans toward China (left) or the USSR (right). Below the tracks, four resource counters (Budget, Logistics, Military Capability, Global Economic Stability) record the material situation.</p>
+
+      <h3>The Turn Sequence</h3>
+      <p>One turn represents one year, from 1961 to 1975. Within each year the four factions act in order: <b>United States, South Vietnam, North Vietnam, White Cell</b>. On your faction's turn you spend <b>Action Points</b> by playing cards from your decks, then press <b>End Turn</b> to pass the seat. After all four have acted, the year advances and a scripted historical event may fire (the Diem coup, Gulf of Tonkin, Tet, Cambodia, the Paris Accords, the 1975 offensive, and others).</p>
+
+      <h3>Action Points and Cards</h3>
+      <p>Each faction receives a fresh pool of Action Points every year. The United States pool grows as the war escalates in the mid 1960s and shrinks after the 1973 withdrawal. Spend points on four kinds of cards:</p>
+      <ul>
+        <li><b>Diplomatic</b> · phase-locked one-time cards that shift alignment and opinion.</li>
+        <li><b>Economic</b> · aid, development, war funding, and sanctions.</li>
+        <li><b>Information</b> · propaganda, intelligence, and civic messaging.</li>
+        <li><b>Military</b> · the United States deck only (M-01 through M-25), from advisors up to invading the North. Big operations are gated by year and escalation, and the largest ones can trigger a <b>China Intervention Check</b> that may end the game outright.</li>
+      </ul>
+      <p>A card can be played once per turn. Diplomatic cards and the largest military operations are one-time only. The green and red tags on each card show exactly which tracks it moves.</p>
+
+      <h3>Winning</h3>
+      <p>At the end of 1975 (or any time you press <b>Assess Outcome</b>) the game reads the board:</p>
+      <ul>
+        <li><b>Free World Victory</b> · RGI 60 or higher, North Vietnam Will at 35 or below, and U.S. Domestic Support at 40 or above. The Republic governs and endures.</li>
+        <li><b>Northern Victory</b> · South Vietnam Legitimacy falls to 20 or below, U.S. Domestic Support falls to 25 or below, or RGI ends below 45. Also triggered instantly by Chinese intervention.</li>
+        <li><b>Unresolved / Negotiated Exit</b> · anything in between. A settlement freezes a contested map.</li>
+      </ul>
+
+      <h3>The Strategic Tension</h3>
+      <p>The design deliberately makes the tempting path the losing one. Search and destroy, heavy bombing, and widening the war all raise escalation and erode legitimacy and world opinion. Land reform, civic action, counter-insurgency awareness, and legitimate aid are cheap and quiet but build the governance that actually wins. The Ho Chi Minh Trail can be attacked by force (costly, escalatory, and it angers China) or undermined by draining the will to walk it. Choose which war you are fighting.</p>
+
+      <p style="margin-top:18px; font-style:italic; color:#c1b79d;">This digital version is a companion to the tabletop edition. The physical cards, board, and rulebook remain the authoritative reference; the simulation is a fast way to test ideas and teach the cognitive model.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* =====================================================================
+   HEARTS & MINDS: VIETNAM 1961–1975  ·  game engine
+   Tracks 0–100: USD (US Domestic), SVL (SVN Legitimacy), NVW (NVN Will),
+   ESC (Escalation), IS (International Support). CP = -50..+50 (China/USSR).
+   Resources are flavor counters. One unified Action-Point pool per faction.
+   ===================================================================== */
+
+const FACTIONS = {
+  USA: {key:"USA", name:"United States", color:"--usa",
+        role:"Superpower patron. Hold domestic support, build a legitimate ally, avoid the escalation trap."},
+  SVN: {key:"SVN", name:"South Vietnam", color:"--svn",
+        role:"Your legitimacy is the center of gravity. Govern the villages or lose the country."},
+  NVN: {key:"NVN", name:"North Vietnam", color:"--nvn",
+        role:"Outlast the Americans. Trade space and casualties for their will and your patrons' aid."},
+  WC:  {key:"WC",  name:"White Cell", color:"--wc",
+        role:"UN · USSR · China · SEATO. Tilt patronage, escalation, and world opinion from outside."},
+};
+const ORDER = ["USA","SVN","NVN","WC"];
+
+const TRACK_META = [
+  {k:"USD", label:"U.S. Domestic Support",   cls:"u-usd"},
+  {k:"SVL", label:"South Vietnam Legitimacy", cls:"u-svl"},
+  {k:"NVW", label:"North Vietnam Will",       cls:"u-nvw"},
+  {k:"ESC", label:"Escalation Level",         cls:"u-esc"},
+  {k:"IS",  label:"International Support",     cls:"u-is"},
+];
+const RES_META = [
+  {k:"B",   label:"Budget / War Funding"},
+  {k:"LOG", label:"Logistics / Supply"},
+  {k:"MC",  label:"Military Capability"},
+  {k:"GES", label:"Global Econ. Stability"},
+];
+
+// Pretty names for delta tags
+const TRACK_SHORT = {USD:"US Dom",SVL:"SVN Legit",NVW:"NVN Will",ESC:"Escal",IS:"Intl Sup",
+                     CP:"Patronage",B:"Budget",LOG:"Logistics",MC:"Mil Cap",GES:"Glo Econ"};
+
+/* ---------- helper to author cards compactly ---------- */
+// e(track effects), c(cost), y(available from year), to(available until year)
+function mk(id, player, cat, title, cost, eff, fx, opts){
+  return Object.assign({id, player, cat, title, cost, eff, fx:fx||{}}, opts||{});
+}
+
+/* =========================== CARD DATABASE =========================== */
+/* cat: M military, E economic, I information, D diplomatic.
+   Diplomatic cards are phase-gated (y..to) and one-time (once:true).      */
+const CARDS = [];
+
+/* ---- USA MILITARY (M-01..M-25) ---- */
+CARDS.push(
+ mk("M-01","USA","M","Military Advisors",2,"+1 ARVN combat rating; bolster the regime's forces.",{SVL:+1,ESC:+1,USD:+1},{y:1961}),
+ mk("M-02","USA","M","Helicopter Mobility Program",3,"ARVN ignores jungle movement cost; one rapid-reaction move per turn.",{ESC:+1,MC:+1},{y:1961}),
+ mk("M-03","USA","M","Special Forces Operations",3,"Remove one VC cell; gain an intelligence marker.",{ESC:+1,NVW:-1},{y:1961}),
+ mk("M-04","USA","M","City Defense Strategy",2,"Cities receive +2 defense; rural areas gain no benefit.",{USD:+1,SVL:-1},{y:1961}),
+ mk("M-05","USA","M","Coastal Defense Operations",2,"Coastal hexes +1 defense; reduce seaborne infiltration.",{},{y:1961}),
+ mk("M-06","USA","M","Deploy 50,000 Troops",5,"Place 2 U.S. brigade units in theater.",{ESC:+5,USD:-1,MC:+2},{y:1964}),
+ mk("M-07","USA","M","Deploy 100,000 Troops",8,"Place 4 U.S. brigade units; full Americanization.",{ESC:+8,USD:-2,MC:+3,SVL:-1},{y:1965}),
+ mk("M-08","USA","M","Search & Destroy Campaign",4,"+2 combat; may attack twice. Attrition over pacification.",{ESC:+2,SVL:-1,NVW:-1},{y:1965}),
+ mk("M-09","USA","M","Strategic Airlift Expansion",4,"Double movement for one formation; air-reaction capability.",{ESC:+1,MC:+1},{y:1965}),
+ mk("M-10","USA","M","Marine Coastal Enclaves",3,"Coastal bases receive +2 defense.",{ESC:+1},{y:1965}),
+ mk("M-11","USA","M","Operation Rolling Thunder",6,"Reduce North Vietnamese logistics by 2.",{ESC:+5,IS:-2,LOG:-2},{y:1965}),
+ mk("M-12","USA","M","Bomb Ho Chi Minh Trail",3,"Reduce infiltration by 2; interdict the trail by force.",{ESC:+2,LOG:-1},{y:1965}),
+ mk("M-13","USA","M","Bomb Laos",4,"Trail network disrupted across the Laotian panhandle.",{IS:-3,LOG:-1},{y:1965}),
+ mk("M-14","USA","M","Bomb Cambodia",4,"Remove one sanctuary marker.",{ESC:+4,IS:-5},{y:1969}),
+ mk("M-15","USA","M","Mine Haiphong Harbor",5,"Soviet seaborne supply reduced by 50%.",{ESC:+6,IS:-2,LOG:-2},{y:1972}),
+ mk("M-16","USA","M","Bomb Hanoi",6,"Direct strikes on the northern capital.",{ESC:+8,IS:-5,NVW:-4},{y:1961}),
+ mk("M-17","USA","M","Cross-Border Raid",3,"Attack one sanctuary hex.",{ESC:+3},{y:1966}),
+ mk("M-18","USA","M","Cambodian Incursion",5,"Remove two sanctuary markers; widen the war.",{USD:-3,IS:-3,NVW:-2},{y:1970}),
+ mk("M-19","USA","M","Laos Offensive",6,"Reduce trail capacity by 3 (Lam Son 719).",{ESC:+6,SVL:-1,LOG:-2},{y:1971}),
+ mk("M-20","USA","M","Naval Blockade",8,"Foreign aid to North Vietnam reduced by 50%.",{ESC:+10,IS:-5,LOG:-3},{y:1961, escReq:50}),
+ mk("M-21","USA","M","Invade North Vietnam",12,"U.S. units may enter North Vietnam.",{ESC:+20,NVW:-5},{y:1961, escReq:60, once:true, special:"china", setFlag:"invaded"}),
+ mk("M-22","USA","M","Occupy Hanoi",15,"Seize the northern capital.",{NVW:-20},{y:1961, prereq:"invaded", once:true, special:"chinaSoviet"}),
+ mk("M-23","USA","M","Vietnamization",4,"ARVN combat rating +2; hand the war back to Saigon.",{ESC:-3,USD:+5,MC:+1,SVL:+1},{y:1969}),
+ mk("M-24","USA","M","Withdraw 50,000 Troops",3,"Remove two U.S. brigade units.",{ESC:-2,USD:+3,SVL:-1},{y:1969}),
+ mk("M-25","USA","M","Strategic Defensive Posture",2,"Defend cities only; U.S. units gain +1 defense.",{ESC:-1,USD:+2,SVL:-1},{y:1961})
+);
+
+/* ---- ECONOMIC (E-01..E-05 per faction) ---- */
+CARDS.push(
+ // USA
+ mk("E-01","USA","E","Economic Aid Package",1,"Economic assistance to strengthen Saigon's economy and state.",{SVL:+1,USD:-1},{y:1961}),
+ mk("E-02","USA","E","Trade & Investment Initiative",1,"Expand U.S. trade and private investment.",{GES:+1,USD:+1},{y:1961}),
+ mk("E-03","USA","E","Agricultural Development Program",1,"Rural development, irrigation, and food production.",{SVL:+1},{y:1961}),
+ mk("E-04","USA","E","Sanctions on North Vietnam",2,"Limit Hanoi's access to international resources.",{IS:-1,ESC:+1,LOG:-1},{y:1961}),
+ mk("E-05","USA","E","War Economy Surge",2,"Redirect the U.S. economy toward the war effort.",{B:+2,USD:-1,ESC:+1},{y:1961}),
+ // SVN
+ mk("E-01","SVN","E","National Economic Recovery Plan",1,"Rebuild infrastructure and restore growth.",{SVL:+1,GES:+1},{y:1961}),
+ mk("E-02","SVN","E","Private Sector Development",1,"Encourage enterprise; reduce heavy-handed regulation.",{GES:+1,SVL:+1},{y:1961}),
+ mk("E-03","SVN","E","Land Reform Initiative",1,"Redistribute land and support rural communities.",{SVL:+2},{y:1961}),
+ mk("E-04","SVN","E","Industrial Growth Program",2,"Invest in industry and urban economic centers.",{GES:+1,USD:-1},{y:1961}),
+ mk("E-05","SVN","E","Fiscal Stability Measures",1,"Control inflation, reduce corruption, stabilize the budget.",{SVL:+1,B:+1},{y:1961}),
+ // NVN
+ mk("E-01","NVN","E","War Economy Mobilization",1,"Direct all resources to the war effort.",{NVW:+1,GES:-1},{y:1961}),
+ mk("E-02","NVN","E","Agricultural Collectivization",1,"Collective farms increase food production for the war.",{LOG:+1,GES:-1,CP:+1},{y:1961}),
+ mk("E-03","NVN","E","Expand Taxation & Revenue",1,"Domestic revenue through taxation and bonds.",{B:+1,NVW:+1},{y:1961}),
+ mk("E-04","NVN","E","Expand Trade with Socialist Allies",2,"Deepen cooperation with China and the USSR.",{CP:+1,IS:-1,LOG:+1},{y:1961}),
+ mk("E-05","NVN","E","Resource Allocation for Offensive",2,"Prioritize logistics for a major offensive.",{MC:+1,GES:-1,B:-1},{y:1961}),
+ // WC
+ mk("E-01","WC","E","International Economic Assistance",1,"Aid for stability and development in the region.",{GES:+1},{y:1961}),
+ mk("E-02","WC","E","Energy & Resource Cooperation",1,"Promote access to energy and critical resources.",{GES:+1,IS:+1},{y:1961}),
+ mk("E-03","WC","E","Economic Pressure Campaign",2,"Economic leverage to influence behavior.",{IS:+1,ESC:+1,LOG:-1},{y:1961}),
+ mk("E-04","WC","E","Development & Humanitarian Assistance",1,"Support humanitarian and development projects.",{IS:+1,SVL:+1},{y:1961}),
+ mk("E-05","WC","E","Global Economic Coordination",2,"Coordinate policy to reduce the conflict's impact.",{GES:+1,IS:+1,ESC:-1},{y:1961})
+);
+
+/* ---- INFORMATION (I-01..I-05 per faction) ---- */
+CARDS.push(
+ // USA
+ mk("I-01","USA","I","Advanced Intelligence Collection",2,"Expand signals intelligence and reconnaissance.",{NVW:-1,MC:+1},{y:1961}),
+ mk("I-02","USA","I","Counterpropaganda Campaign",2,"Undermine enemy propaganda; promote U.S. objectives.",{NVW:-1},{y:1961}),
+ mk("I-03","USA","I","Public Diplomacy Initiative",2,"Communicate U.S. policy and values to the world.",{IS:+1,USD:+1},{y:1961}),
+ mk("I-04","USA","I","Support Friendly Media & Journalists",1,"Shape international reporting; blunt one negative event.",{IS:+1,USD:+1},{y:1961}),
+ mk("I-05","USA","I","Analyze Enemy Intentions",1,"Assess enemy strategy and leadership decisions.",{ESC:-1,MC:+1},{y:1961}),
+ // SVN
+ mk("I-01","SVN","I","Population Intelligence Program",2,"Expand informant networks in villages and cities.",{SVL:+1,MC:+1},{y:1961}),
+ mk("I-02","SVN","I","Civic Action Information",1,"Publicize government services to build trust.",{SVL:+1,USD:+1},{y:1961}),
+ mk("I-03","SVN","I","Counter-Insurgency Awareness",2,"Educate the population on VC tactics and protection.",{SVL:+1,NVW:-1},{y:1961}),
+ mk("I-04","SVN","I","Influence Religious & Community Leaders",1,"Work with respected leaders for stability.",{SVL:+1,IS:+1},{y:1961}),
+ mk("I-05","SVN","I","Secure Communications Network",1,"Protect government communications from infiltration.",{SVL:+1,ESC:-1},{y:1961}),
+ // NVN
+ mk("I-01","NVN","I","People's Propaganda Campaign",1,"Spread the revolutionary message of national unity.",{NVW:+1,IS:+1},{y:1961}),
+ mk("I-02","NVN","I","Exploit U.S. War Fatigue",1,"Highlight U.S. casualties and social divisions.",{USD:-1,IS:+1},{y:1961}),
+ mk("I-03","NVN","I","Overseas Support Networks",2,"Build support among antiwar movements abroad.",{IS:+1,CP:+1},{y:1961}),
+ mk("I-04","NVN","I","Counter U.S. Propaganda Operations",2,"Discredit U.S. claims; expose alleged war crimes.",{NVW:+1,USD:-1},{y:1961}),
+ mk("I-05","NVN","I","Maintain Security & Discipline",1,"Strengthen internal control; prevent dissent.",{NVW:+1},{y:1961}),
+ // WC
+ mk("I-01","WC","I","Collect Global Intelligence",2,"Improve understanding of worldwide events.",{ESC:-1},{y:1961}),
+ mk("I-02","WC","I","Shape International Narrative",1,"Influence global opinion through media and diplomacy.",{IS:+1,USD:-1},{y:1961}),
+ mk("I-03","WC","I","Mediation & Quiet Diplomacy",2,"Engage parties privately to reduce tensions.",{ESC:-1,IS:+1},{y:1961}),
+ mk("I-04","WC","I","Monitor & Verify Compliance",1,"Observe adherence to agreements and norms.",{IS:+1,ESC:-1},{y:1961}),
+ mk("I-05","WC","I","Coordinate Humanitarian Initiatives",1,"Highlight the human costs of the conflict.",{IS:+1},{y:1961})
+);
+
+/* ---- DIPLOMATIC (phase-gated, one-time) ---- */
+/* Phase I 1961-64, II 1965-68, III 1969-72, IV 1973-75 */
+const PH=[[1961,1964],[1965,1968],[1969,1972],[1973,1975]];
+function dipl(id,player,title,fx,phase,extra){
+  const [y,to]=PH[phase-1];
+  return mk(id,player,"D",title,2,"Diplomatic initiative.",fx,Object.assign({y,to,once:true},extra||{}));
+}
+CARDS.push(
+ // USA
+ dipl("U-D1","USA","Strengthen SEATO",{IS:+2,USD:+1,SVL:+1,ESC:+1},1),
+ dipl("U-D2","USA","Aid & Advisor Expansion",{SVL:+2,IS:+1,ESC:+1},1),
+ dipl("U-D3","USA","Press Diem on Reforms",{SVL:+2,USD:-1},1),
+ dipl("U-D4","USA","Public Anti-Communist Message",{USD:+2,IS:+1},1),
+ dipl("U-D5","USA","Seek Limited Neutralization",{ESC:-1,IS:-1},1),
+ dipl("U-D6","USA","Rally Free World Support",{IS:+2,USD:+1,ESC:+1},2),
+ dipl("U-D7","USA","Increase Economic Aid",{SVL:+2,IS:+1,ESC:+1},2),
+ dipl("U-D8","USA","Expand Military Aid",{SVL:+1,ESC:+1,USD:-1},2),
+ dipl("U-D9","USA","Pressure on Neutral States",{SVL:+1,NVW:+1,ESC:+1},2),
+ dipl("U-D10","USA","Support Saigon Internationally",{IS:+1,USD:+1},2),
+ dipl("U-D11","USA","Broaden War Coalition",{IS:+1,ESC:+1},3),
+ dipl("U-D12","USA","Link to Soviet Threat",{IS:+1,ESC:-1},3),
+ dipl("U-D13","USA","Encourage Vietnamization",{SVL:+1,USD:+2,ESC:-1},3),
+ dipl("U-D14","USA","Diplomatic Offensive in UN",{IS:+1},3),
+ dipl("U-D15","USA","Open Talks (Exploratory)",{ESC:-1,USD:+1},3),
+ dipl("U-D16","USA","Paris Peace Support",{IS:+2,USD:+1,ESC:-1},4),
+ dipl("U-D17","USA","Reduce Aid (Pressure)",{SVL:-1,NVW:+1,ESC:-1},4),
+ dipl("U-D18","USA","Public Support for Peace",{USD:+2,IS:-1,ESC:-1},4),
+ dipl("U-D19","USA","Maintain SEATO Commitment",{IS:+1,SVL:+1},4),
+ dipl("U-D20","USA","Recognize Post-War Settlement",{IS:+1,ESC:-1},4),
+ // SVN
+ dipl("S-D1","SVN","Modernize Diplomatic Service",{IS:+1,SVL:+1},1),
+ dipl("S-D2","SVN","Appeal for U.S. Support",{SVL:+1,IS:+1},1),
+ dipl("S-D3","SVN","Nation Building Program",{SVL:+2,USD:+1},1),
+ dipl("S-D4","SVN","Outreach to Buddhists",{SVL:+1},1),
+ dipl("S-D5","SVN","Regional Diplomacy",{IS:+1},1),
+ dipl("S-D6","SVN","Strengthen Alliances",{IS:+1,SVL:+1},2),
+ dipl("S-D7","SVN","Rural Development Initiative",{SVL:+2},2),
+ dipl("S-D8","SVN","Seek More U.S. Military Support",{SVL:+1,USD:-1,ESC:+1},2),
+ dipl("S-D9","SVN","Anti-Communist Info Campaign",{SVL:+1,NVW:-1},2),
+ dipl("S-D10","SVN","Mission to Asian States",{IS:+1,SVL:+1},2),
+ dipl("S-D11","SVN","Call for Vietnamization",{SVL:+1,USD:+1},3),
+ dipl("S-D12","SVN","Economic Reform Effort",{SVL:+1,GES:+1},3),
+ dipl("S-D13","SVN","National Reconciliation Appeal",{SVL:+2,NVW:-1},3),
+ dipl("S-D14","SVN","Broaden International Contacts",{IS:+1},3),
+ dipl("S-D15","SVN","Strengthen Regional Ties",{IS:+1,SVL:+1},3),
+ dipl("S-D16","SVN","Support Paris Accords",{IS:+1,ESC:-1},4),
+ dipl("S-D17","SVN","Promote Reconstruction",{SVL:+1,GES:+1},4),
+ dipl("S-D18","SVN","Seek Economic Investment",{GES:+1,SVL:+1},4),
+ dipl("S-D19","SVN","Appeal for Continued U.S. Support",{SVL:+1,USD:+1},4),
+ dipl("S-D20","SVN","Post-War Diplomatic Outreach",{IS:+1,SVL:+1},4),
+ // NVN
+ dipl("N-D1","NVN","Align with China",{CP:-5,NVW:+1},1),
+ dipl("N-D2","NVN","Build Ties with Soviet Union",{CP:+3,NVW:+1},1),
+ dipl("N-D3","NVN","Internationalize the Struggle",{IS:+1},1),
+ dipl("N-D4","NVN","Propaganda Campaign",{USD:-1,NVW:+1},1),
+ dipl("N-D5","NVN","Support from Non-Aligned",{IS:+1},1),
+ dipl("N-D6","NVN","Exploit Anti-Americanism",{USD:-1,IS:+1},2),
+ dipl("N-D7","NVN","Play China vs USSR",{NVW:+1,LOG:+1},2),
+ dipl("N-D8","NVN","Seek More Military Aid",{CP:-5,MC:+1},2),
+ dipl("N-D9","NVN","Diplomatic Offensive in UN",{IS:+1,USD:-1},2),
+ dipl("N-D10","NVN","Support Revolutionary Movements",{IS:+1,NVW:+1},2),
+ dipl("N-D11","NVN","Deepen Soviet Relationship",{CP:+10,MC:+1},3),
+ dipl("N-D12","NVN","Border Solidarity with China",{CP:-5,LOG:+1},3),
+ dipl("N-D13","NVN","Promote Peace Talks (Stall)",{USD:-1,NVW:+1},3),
+ dipl("N-D14","NVN","Win Third World Support",{IS:+1,USD:-1},3),
+ dipl("N-D15","NVN","Diplomacy of Patience",{NVW:+1,USD:-1},3),
+ dipl("N-D16","NVN","Leverage Peace Talks",{IS:+1,USD:-1},4),
+ dipl("N-D17","NVN","Secure Soviet Rearmament",{CP:+10,MC:+1},4),
+ dipl("N-D18","NVN","Maintain China Goodwill",{CP:-5,LOG:+1},4),
+ dipl("N-D19","NVN","Isolate South Vietnam",{SVL:-1,IS:+1},4),
+ dipl("N-D20","NVN","Prepare for Final Victory",{NVW:+2,MC:+1},4),
+ // WC
+ dipl("W-D1","WC","UN Calls for Restraint",{ESC:-1,IS:+1},1),
+ dipl("W-D2","WC","Soviet Caution Policy",{CP:+2,ESC:-1},1),
+ dipl("W-D3","WC","China Supports Revolution",{CP:-5,NVW:+1},1),
+ dipl("W-D4","WC","SEATO Coordination",{IS:+1,SVL:+1},1),
+ dipl("W-D5","WC","Non-Aligned Pressure for Neutrality",{IS:+1,ESC:-1},1),
+ dipl("W-D6","WC","USSR Increases Arms Aid",{CP:+5,NVW:+1,MC:+1},2),
+ dipl("W-D7","WC","China Sends Aid & Engineers",{CP:-5,LOG:+1},2),
+ dipl("W-D8","WC","UN Debate Escalates",{IS:+1,ESC:+1},2),
+ dipl("W-D9","WC","SEATO Political Support",{SVL:+1,IS:+1},2),
+ dipl("W-D10","WC","Non-Aligned Movement Statement",{IS:+1},2),
+ dipl("W-D11","WC","Sino-Soviet Border Tensions",{CP:+10,NVW:-1},3),
+ dipl("W-D12","WC","Soviet Strategic Commitment",{CP:+10,NVW:+1},3),
+ dipl("W-D13","WC","UN Peace Initiative",{ESC:-1,IS:+1},3),
+ dipl("W-D14","WC","SEATO Reassurance",{SVL:+1,IS:+1},3),
+ dipl("W-D15","WC","China Skeptical Stance",{CP:-5,NVW:-1},3),
+ dipl("W-D16","WC","Paris Peace Process",{ESC:-1,IS:+1},4),
+ dipl("W-D17","WC","USSR Backs Settlement",{CP:+10,ESC:-1},4),
+ dipl("W-D18","WC","China Encourages Settlement",{CP:-5,ESC:-1},4),
+ dipl("W-D19","WC","UN Supervises Ceasefire",{ESC:-1,IS:+1},4),
+ dipl("W-D20","WC","SEATO Posture Adjustment",{SVL:+1,IS:-1},4)
+);
+
+/* =========================== SCRIPTED HISTORY =========================== */
+const EVENTS = {
+ 1962:{t:"Strategic Hamlet Program",x:{SVL:+2,NVW:+1},s:"Saigon resettles peasants into fortified hamlets; order imposed from above, legitimacy uncertain."},
+ 1963:{t:"Buddhist Crisis & Coup Against Diem",x:{SVL:-9,USD:-3},s:"Self-immolations shock the world; Diem is overthrown and killed. The regime's legitimacy collapses and the revolving-door governments begin."},
+ 1964:{t:"Gulf of Tonkin Incident",x:{ESC:+10,USD:+5,IS:-2},s:"A contested naval clash hands Washington a blank check. Domestic support rallies, for now, and the door to direct U.S. combat opens."},
+ 1965:{t:"Marines Land at Da Nang · Rolling Thunder",x:{ESC:+6,SVL:-1},s:"The first U.S. combat troops come ashore. The war is Americanized."},
+ 1966:{t:"Air War Expands",x:{IS:-3,NVW:+1},s:"Sustained bombing draws growing international criticism without breaking northern resolve."},
+ 1967:{t:"Antiwar Movement Grows",x:{USD:-4},s:"Marches and draft resistance spread across American campuses and cities."},
+ 1968:{t:"The Tet Offensive",x:{USD:-12,SVL:-4,NVW:-7,IS:-2},s:"A coordinated nationwide assault is crushed militarily but wins the media war. American faith in the war never recovers.",major:true},
+ 1969:{t:"Nixon Doctrine · Vietnamization Begins",x:{USD:+4,ESC:-2},s:"Washington pivots to handing combat back to the ARVN while drawing down its own forces."},
+ 1970:{t:"Cambodian Campaign & Kent State",x:{USD:-6,IS:-4,NVW:-3},s:"Widening the war into Cambodia disrupts sanctuaries but ignites a domestic firestorm."},
+ 1971:{t:"Lam Son 719 (Laos)",x:{NVW:-2,IS:-2,SVL:-2,LOG:-1},s:"The ARVN tests Vietnamization against the trail in Laos, a costly and ambiguous result."},
+ 1972:{t:"Easter Offensive & Linebacker",x:{ESC:+8,NVW:-5,SVL:+2},s:"A conventional northern invasion is blunted by ARVN ground forces and overwhelming U.S. airpower.",major:true},
+ 1973:{t:"Paris Peace Accords · U.S. Withdrawal",x:{USD:+6,ESC:-10,SVL:-4},s:"American combat forces go home and the POWs return. Saigon now stands largely alone.",major:true,flag:"usWithdrawn"},
+ 1974:{t:"Congress Slashes Aid to Saigon",x:{SVL:-8,B:-2,MC:-2},s:"Watergate and war-weariness gut the aid pipeline. The ARVN's fuel, ammunition, and morale dwindle."},
+ 1975:{t:"The Final Offensive",x:{NVW:+6,SVL:-6,MC:-2},s:"Columns drive south toward Saigon. The fate of the Republic hangs on whatever legitimacy and capacity remain.",major:true},
+};
+
+/* =========================== STATE =========================== */
+let S;
+function freshState(){
+  return {
+    year:1961, oi:0,                 // order index
+    tracks:{USD:70, SVL:35, NVW:60, ESC:10, IS:50, CP:0},
+    res:{B:10, LOG:10, MC:8, GES:12},
+    ap:0,
+    playedThisTurn:{}, playedEver:{}, flags:{},
+    log:[], gameOver:false, milestones:{},
+    filter:"ALL",
+    players:["Player 1","Player 2"],
+    assign:{USA:0, SVN:0, NVN:1, WC:null},
+    teamMode:true,
+  };
+}
+function phaseOf(y){ return y<=1964?1 : y<=1968?2 : y<=1972?3 : 4; }
+const PHASE_NAME={1:"Phase I · Early Alignment",2:"Phase II · Escalation",3:"Phase III · Shift in Balance",4:"Phase IV · Endgame"};
+
+function apBudget(f,y,flags){
+  if(f==="USA"){
+    if(flags.usWithdrawn) return 5;
+    if(y<=1964) return 8;
+    if(y<=1968) return 13;
+    if(y<=1972) return 14;
+    return 9;
+  }
+  if(f==="SVN") return 7;
+  if(f==="NVN"){ if(y<=1964) return 7; if(y<=1968) return 9; if(y<=1972) return 11; return 12; }
+  return 6; // WC
+}
+const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+
+function applyFx(fx, sign){
+  sign = sign||1;
+  for(const k in fx){
+    const d = fx[k]*sign;
+    if(k==="CP"){ S.tracks.CP = clamp(S.tracks.CP + d, -50, 50); }
+    else if(k in S.tracks){ S.tracks[k] = clamp(S.tracks[k] + d, 0, 100); }
+    else if(k in S.res){ S.res[k] = Math.max(0, S.res[k] + d); }
+  }
+}
+
+function rgi(){
+  const t=S.tracks;
+  return Math.round(0.50*t.SVL + 0.25*t.USD + 0.15*(100-t.ESC) + 0.10*(100-t.NVW));
+}
+function rgiStatus(v){
+  if(v>=60) return {t:"Villages governed; the countryside holds at night.", good:true};
+  if(v>=45) return {t:"Contested. Daytime is Saigon's, the night belongs to the insurgency.", good:null};
+  return {t:"Governance has failed. The villages answer to the cadres after dark.", good:false};
+}
+
+/* =========================== RENDER =========================== */
+function activeFaction(){ return ORDER[S.oi]; }
+
+function render(){
+  // header
+  document.getElementById("yearDisp").textContent = S.year;
+  document.getElementById("phaseDisp").textContent = PHASE_NAME[phaseOf(S.year)].split("·")[0].trim();
+  // order chips
+  const oc=document.getElementById("order"); oc.innerHTML="";
+  ORDER.forEach((f,i)=>{
+    const c=document.createElement("div");
+    c.className="chip"+(i===S.oi?" active":""); c.dataset.f=f;
+    c.innerHTML=`${f}<small>${FACTIONS[f].name}</small>`;
+    oc.appendChild(c);
+  });
+  // tracks
+  const tc=document.getElementById("tracks"); tc.innerHTML="";
+  TRACK_META.forEach(m=>{
+    const v=S.tracks[m.k];
+    const d=document.createElement("div"); d.className="track";
+    d.innerHTML=`<div class="tlabel"><span>${m.label}</span><b>${v}</b></div>
+      <div class="bar ${m.cls}"><div class="fill" style="width:${v}%"></div>
+      <div class="ticks">${"<span></span>".repeat(10)}</div></div>`;
+    tc.appendChild(d);
+  });
+  // CP
+  const cp=S.tracks.CP;
+  document.getElementById("cpMarker").style.left = (50 + cp) + "%";
+  document.getElementById("cpReadout").innerHTML =
+    cp<0 ? `<b style="font-family:'Stardos Stencil'">China +${-cp}</b>` :
+    cp>0 ? `<b style="font-family:'Stardos Stencil'">USSR +${cp}</b>` :
+           `<b style="font-family:'Stardos Stencil'">Balanced</b>`;
+  // RGI
+  const v=rgi(), st=rgiStatus(v);
+  document.getElementById("rgiNum").innerHTML = `${v}<small>RGI / 100</small>`;
+  document.getElementById("rgiNum").style.color = st.good===true?"#9fc18e":st.good===false?"#d98f86":"#e9ddc2";
+  document.getElementById("rgiText").innerHTML = st.t +
+    (S.year<=1965 ? ` <b>(1965 checkpoint: trajectory ${v>=42?"on track":"FALTERING"}.)</b>` : "");
+  // resources
+  const rs=document.getElementById("resStrip"); rs.innerHTML="";
+  RES_META.forEach(m=>{
+    const p=document.createElement("div"); p.className="pip";
+    p.innerHTML=`${m.label}<b>${S.res[m.k]}</b>`; rs.appendChild(p);
+  });
+  // faction banner + AP
+  const f=activeFaction(), F=FACTIONS[f];
+  const ctrl=S.assign[f];
+  const ctrlHtml = (ctrl==null || ctrl>=S.players.length)
+    ? `<span class="ctrlbadge open">Open seat · pass &amp; play</span>`
+    : `<span class="ctrlbadge">Controller: ${S.players[ctrl]}</span>`;
+  const fb=document.getElementById("factionBanner");
+  fb.style.borderLeft=`6px solid var(${F.color})`;
+  fb.innerHTML=`<div><div class="who" style="color:var(${F.color})">${F.name}</div>
+      <div class="role">${F.role}</div>${ctrlHtml}</div>
+      <div class="ap"><div class="v">${S.ap}</div><div class="l">Action Pts</div></div>`;
+  renderFilters(); renderHand(); renderLog();
+
+  document.getElementById("endTurnBtn").textContent = S.oi<3 ? `End ${f} Turn ▸` : `Advance to ${S.year+1} ▸`;
+  if(S.gameOver){ document.getElementById("endTurnBtn").disabled=true; }
+}
+
+function renderFilters(){
+  const cats=[["ALL","All"],["M","Military"],["E","Economic"],["I","Information"],["D","Diplomatic"]];
+  const fc=document.getElementById("filters"); fc.innerHTML="";
+  const f=activeFaction();
+  cats.forEach(([k,lbl])=>{
+    if(k==="M" && f!=="USA") return; // only USA has military deck
+    const b=document.createElement("button");
+    b.textContent=lbl; if(S.filter===k) b.className="on";
+    b.onclick=()=>{S.filter=k; renderFilters(); renderHand();};
+    fc.appendChild(b);
+  });
+}
+
+function cardAvailable(c){
+  const f=activeFaction();
+  if(c.player!==f) return false;
+  if(c.y && S.year < c.y) return false;
+  if(c.to && S.year > c.to) return false;
+  if(c.once && S.playedEver[c.player+c.id]) return false;
+  return true;
+}
+function cardPlayable(c){
+  if(S.gameOver) return {ok:false,why:""};
+  if(S.playedThisTurn[c.player+c.id]) return {ok:false, why:"Already played this turn"};
+  if(S.ap < c.cost) return {ok:false, why:"Not enough Action Points"};
+  if(c.escReq && S.tracks.ESC < c.escReq) return {ok:false, why:"Requires Escalation "+c.escReq+"+"};
+  if(c.prereq && !S.flags[c.prereq]) return {ok:false, why:"Requires: Invade North first"};
+  return {ok:true};
+}
+
+function renderHand(){
+  const h=document.getElementById("hand"); h.innerHTML="";
+  let list=CARDS.filter(cardAvailable);
+  if(S.filter!=="ALL") list=list.filter(c=>c.cat===S.filter);
+  // sort: by category then cost
+  const catOrder={D:0,E:1,I:2,M:3};
+  list.sort((a,b)=> (catOrder[a.cat]-catOrder[b.cat]) || (a.cost-b.cost) || a.id.localeCompare(b.id));
+  if(!list.length){ h.innerHTML=`<div class="empty">No cards available for this faction in ${S.year}.</div>`; return; }
+  list.forEach(c=>{
+    const pl=cardPlayable(c);
+    const card=document.createElement("div");
+    card.className="card cat-"+c.cat + (pl.ok?"":" disabled");
+    const costLabel = c.cat==="M"?"MAP":c.cat==="E"?"Econ":c.cat==="I"?"Info":"Dipl";
+    let deltas="";
+    for(const k in c.fx){
+      const val=c.fx[k]; const up=val>0;
+      // For escalation/NVW, "up" is not necessarily good; tag purely by sign
+      deltas+=`<span class="d ${up?"up":"dn"}">${TRACK_SHORT[k]||k} ${up?"+":""}${val}</span>`;
+    }
+    let reqHtml="";
+    if(c.escReq) reqHtml+=`<div class="req">⚠ Requires Escalation ${c.escReq}+</div>`;
+    if(c.prereq) reqHtml+=`<div class="req">⚠ Requires successful invasion</div>`;
+    let specialHtml="";
+    if(c.special==="china") specialHtml=`<div class="special">⚑ Triggers China Intervention Check</div>`;
+    if(c.special==="chinaSoviet") specialHtml=`<div class="special">⚑ Auto China + Soviet Response Check</div>`;
+    card.innerHTML=`
+      <div class="chead">
+        <span class="cid">${c.id}</span>
+        <span class="ctitle">${c.title}</span>
+        <span class="cost">${c.cost}<small>${costLabel} AP</small></span>
+      </div>
+      <div class="ctype">${({M:"Military",E:"Economic",I:"Information",D:"Diplomatic"})[c.cat]}${c.once?" · One-time":""}${c.y&&c.y>1961?" · "+c.y+"+":""}</div>
+      <div class="ceff">${c.eff}</div>
+      <div class="deltas">${deltas||'<span class="d up">No track change</span>'}</div>
+      ${reqHtml}${specialHtml}
+      ${pl.ok?"":`<div class="req">${pl.why}</div>`}`;
+    if(pl.ok) card.onclick=()=>playCard(c);
+    h.appendChild(card);
+  });
+}
+
+function renderLog(){
+  const l=document.getElementById("log"); l.innerHTML="";
+  S.log.slice().reverse().forEach(e=>{
+    const d=document.createElement("div");
+    d.className="entry"+(e.major?" major":"");
+    d.innerHTML=`<span class="yr">${e.year}</span><span class="f ${e.f}">${e.f}</span>${e.text}`;
+    l.appendChild(d);
+  });
+}
+
+function logMsg(f,text,year,major){
+  S.log.push({f, text, year:year||S.year, major:!!major});
+}
+
+/* =========================== ACTIONS =========================== */
+function playCard(c){
+  const pl=cardPlayable(c); if(!pl.ok) return;
+  S.ap -= c.cost;
+  S.playedThisTurn[c.player+c.id]=true;
+  if(c.once) S.playedEver[c.player+c.id]=true;
+  applyFx(c.fx, 1);
+  if(c.setFlag) S.flags[c.setFlag]=true;
+  logMsg(c.player, `<b>${c.id} ${c.title}</b>: ${c.eff}`);
+  // specials
+  if(c.special==="china"){ chinaCheck(false); }
+  if(c.special==="chinaSoviet"){ chinaCheck(true); sovietCheck(); }
+  if(!S.gameOver) checkInstantLoss();
+  render();
+}
+
+function chinaCheck(auto){
+  const t=S.tracks;
+  // likelihood rises with escalation and a China-leaning patronage track
+  let chance = t.ESC + (t.CP<0 ? (-t.CP) : 0) + (auto?25:0);
+  chance = clamp(chance, 5, 98);
+  const roll = Math.random()*100;
+  if(roll < chance){
+    logMsg("EVENT", `<b>CHINA INTERVENES.</b> Massed PLA "volunteers" cross the border (check ${Math.round(chance)} vs roll ${Math.round(roll)}). The war becomes a second Korea.`, S.year, true);
+    endGame("drv", "Chinese Intervention");
+  } else {
+    logMsg("EVENT", `Beijing issues furious warnings but holds back (check ${Math.round(chance)} vs roll ${Math.round(roll)}).`, S.year, true);
+    applyFx({ESC:+3,IS:-3},1);
+  }
+}
+function sovietCheck(){
+  const roll=Math.random()*100, chance=clamp(S.tracks.ESC + (S.tracks.CP>0?S.tracks.CP:0), 5, 95);
+  if(roll<chance){
+    logMsg("EVENT",`<b>SOVIET RESPONSE.</b> Moscow surges air-defense and matériel; losses mount and world opinion turns.`,S.year,true);
+    applyFx({IS:-6,USD:-5,MC:-2},1);
+  } else {
+    logMsg("EVENT",`Moscow protests loudly but avoids direct confrontation.`,S.year,true);
+  }
+}
+function checkInstantLoss(){
+  if(S.tracks.SVL<=0){ endGame("drv","Collapse of South Vietnamese Legitimacy"); return; }
+  if(S.tracks.USD<=0){ endGame("drv","Total Collapse of U.S. Domestic Support"); return; }
+}
+
+function endTurn(){
+  if(S.gameOver) return;
+  S.oi++;
+  if(S.oi>=ORDER.length){
+    // year resolves
+    S.oi=0;
+    // end-of-year drift: a resilient enemy and cooling guns
+    // NVN will slowly recovers; escalation cools a touch if low military year
+    applyFx({NVW:+1},1);
+    if(S.tracks.ESC>20) applyFx({ESC:-1},1);
+    recordMilestone();
+    if(S.year>=1975){ finalVerdict(); return; }
+    S.year++;
+    fireEvent(S.year);
+  }
+  startTurn();
+}
+
+function startTurn(){
+  const f=activeFaction();
+  S.ap = apBudget(f, S.year, S.flags);
+  S.playedThisTurn={};
+  S.filter = "ALL";
+  render();
+}
+
+function fireEvent(y){
+  const ev=EVENTS[y]; if(!ev) return;
+  applyFx(ev.x,1);
+  if(ev.flag) S.flags[ev.flag]=true;
+  logMsg("EVENT", `<b>${ev.t}.</b> ${ev.s}`, y, ev.major);
+  if(!S.gameOver) checkInstantLoss();
+}
+
+function recordMilestone(){
+  if([1965,1968,1972].includes(S.year) && !S.milestones[S.year]){
+    S.milestones[S.year]=rgi();
+    const v=S.milestones[S.year];
+    logMsg("EVENT", `<b>Checkpoint ${S.year}:</b> Rural Governance Index = ${v}/100. ${rgiStatus(v).t}`, S.year, true);
+  }
+}
+
+/* =========================== ENDGAME =========================== */
+function classifyVerdict(){
+  const t=S.tracks, v=rgi();
+  if(t.SVL<=20 || t.USD<=25 || v<45) return "drv";
+  if(v>=60 && t.NVW<=35 && t.USD>=40) return "free";
+  return "stale";
+}
+function endGame(forced, reason){
+  S.gameOver=true;
+  showVerdict(forced, reason);
+}
+function finalVerdict(){
+  S.gameOver=true;
+  showVerdict(classifyVerdict(), null);
+}
+function showVerdict(kind, reason){
+  const t=S.tracks, v=rgi();
+  const map={
+    free:{stamp:"FREE WORLD VICTORY", sub:"South Vietnam Endures", cls:"verdict-free",
+      body:"The Republic of Vietnam survives as a legitimate, governing state. Rural villages hold after dark; the insurgency has lost its purchase and Hanoi must seek other means. The strategy of legitimacy over attrition has held."},
+    drv:{stamp:"NORTHERN VICTORY", sub:"The Republic Falls", cls:"verdict-drv",
+      body:"Saigon's legitimacy never took root in the villages, or the war's cost broke the patron's will at home. Whether by tanks in 1975 or by the slow erosion of governance, the outcome is the same: reunification on Hanoi's terms."},
+    stale:{stamp:"UNRESOLVED · NEGOTIATED EXIT", sub:"A Decent Interval", cls:"verdict-stale",
+      body:"Neither side achieved its aims cleanly. A settlement freezes a contested map. South Vietnam survives on paper but governs the night unevenly. History suggests such intervals do not last."},
+  };
+  const m=map[kind];
+  document.getElementById("modalCard").className="card-modal "+m.cls;
+  document.getElementById("vStamp").textContent=m.stamp;
+  document.getElementById("vSub").textContent=m.sub;
+  let body=`<p style="margin-top:0">${m.body}</p>`;
+  if(reason) body+=`<p style="color:#d98f86;font-family:'Oswald';letter-spacing:1px;text-transform:uppercase;font-size:13px">Decisive factor: ${reason}</p>`;
+  body+=`<div style="margin-top:14px">
+    <div class="stat"><span>Rural Governance Index</span><b>${v} / 100</b></div>
+    <div class="stat"><span>South Vietnam Legitimacy</span><b>${t.SVL}</b></div>
+    <div class="stat"><span>U.S. Domestic Support</span><b>${t.USD}</b></div>
+    <div class="stat"><span>North Vietnam Will</span><b>${t.NVW}</b></div>
+    <div class="stat"><span>Escalation Level</span><b>${t.ESC}</b></div>
+    <div class="stat"><span>International Support</span><b>${t.IS}</b></div>`;
+  if(S.milestones[1965]!=null) body+=`<div class="stat"><span>1965 Checkpoint RGI</span><b>${S.milestones[1965]}</b></div>`;
+  body+=`</div>`;
+  document.getElementById("vBody").innerHTML=body;
+  document.getElementById("modal").classList.add("show");
+  render();
+}
+
+/* =========================== ASSESS (peek without ending) =========================== */
+function assess(){
+  const t=S.tracks, v=rgi(), kind=classifyVerdict(), st=rgiStatus(v);
+  const trend = S.year<=1965
+    ? `It is ${S.year}. ${v>=42?"The trajectory is salvageable.":"The trajectory is already faltering, and the design thesis warns that after 1965 escalation alone will not fix it."}`
+    : `Projected outcome on current trends: <b>${({free:"Free World victory",drv:"Northern victory",stale:"Unresolved / negotiated exit"})[kind]}</b>.`;
+  document.getElementById("modalCard").className="card-modal "+({free:"verdict-free",drv:"verdict-drv",stale:"verdict-stale"})[kind];
+  document.getElementById("vStamp").textContent="SITUATION ASSESSMENT";
+  document.getElementById("vSub").textContent=`${S.year} · ${PHASE_NAME[phaseOf(S.year)]}`;
+  document.getElementById("vBody").innerHTML=
+    `<p style="margin-top:0">${st.t}</p><p>${trend}</p>
+     <div style="margin-top:8px">
+     <div class="stat"><span>Rural Governance Index</span><b>${v} / 100</b></div>
+     <div class="stat"><span>SVN Legitimacy</span><b>${t.SVL}</b></div>
+     <div class="stat"><span>U.S. Domestic Support</span><b>${t.USD}</b></div>
+     <div class="stat"><span>North Vietnam Will</span><b>${t.NVW}</b></div>
+     <div class="stat"><span>Escalation</span><b>${t.ESC}</b></div>
+     <div class="stat"><span>International Support</span><b>${t.IS}</b></div></div>`;
+  document.getElementById("vClose").textContent="Resume";
+  document.getElementById("modal").classList.add("show");
+}
+
+/* =========================== CARD MARKUP HELPERS =========================== */
+function costLabelOf(c){ return c.cat==="M"?"MAP":c.cat==="E"?"Econ":c.cat==="I"?"Info":"Dipl"; }
+function deltasHTML(fx){
+  let h="";
+  for(const k in fx){ const val=fx[k]; h+=`<span class="d ${val>0?"up":"dn"}">${TRACK_SHORT[k]||k} ${val>0?"+":""}${val}</span>`; }
+  return h||'<span class="d up">No track change</span>';
+}
+function availBits(c){
+  const parts=[({M:"Military",E:"Economic",I:"Information",D:"Diplomatic"})[c.cat]];
+  if(c.once) parts.push("One-time");
+  if(c.y && c.y>1961) parts.push(c.y+"+");
+  if(c.to) parts.push("until "+c.to);
+  if(c.escReq) parts.push("Esc "+c.escReq+"+");
+  if(c.prereq) parts.push("needs invasion");
+  return parts.join(" · ");
+}
+
+/* =========================== VIRTUAL DECK / CARD LIBRARY =========================== */
+const DECK={ faction:"ALL", cat:"ALL" };
+const FAC_NAMES={USA:"United States",SVN:"South Vietnam",NVN:"North Vietnam",WC:"White Cell"};
+
+function staticCardEl(c){
+  const el=document.createElement("div");
+  el.className="card cat-"+c.cat; el.style.cursor="default";
+  let specialHtml="";
+  if(c.special==="china") specialHtml=`<div class="special">⚑ Triggers China Intervention Check</div>`;
+  if(c.special==="chinaSoviet") specialHtml=`<div class="special">⚑ Auto China + Soviet Response Check</div>`;
+  el.innerHTML=`
+    <div class="chead">
+      <span class="cid">${c.id}</span>
+      <span class="ctitle">${c.title}</span>
+      <span class="cost">${c.cost}<small>${costLabelOf(c)} AP</small></span>
+    </div>
+    <div class="ctype"><span class="deck-fac ${c.player}">${c.player}</span> &nbsp;${availBits(c)}</div>
+    <div class="ceff">${c.eff}</div>
+    <div class="deltas">${deltasHTML(c.fx)}</div>
+    ${specialHtml}`;
+  return el;
+}
+
+function renderDeckFilters(){
+  const ff=document.getElementById("deckFactionFilter"); ff.innerHTML="";
+  [["ALL","All Factions"],["USA","United States"],["SVN","South Vietnam"],["NVN","North Vietnam"],["WC","White Cell"]].forEach(([k,lbl])=>{
+    const b=document.createElement("button"); b.textContent=lbl; if(DECK.faction===k) b.className="on";
+    b.onclick=()=>{ DECK.faction=k; renderDeckFilters(); renderDeckGrid(); }; ff.appendChild(b);
+  });
+  const cf=document.getElementById("deckCatFilter"); cf.innerHTML="";
+  [["ALL","All Types"],["D","Diplomatic"],["E","Economic"],["I","Information"],["M","Military"]].forEach(([k,lbl])=>{
+    const b=document.createElement("button"); b.textContent=lbl; if(DECK.cat===k) b.className="on";
+    b.onclick=()=>{ DECK.cat=k; renderDeckFilters(); renderDeckGrid(); }; cf.appendChild(b);
+  });
+}
+function deckList(){
+  const facOrder={USA:0,SVN:1,NVN:2,WC:3}, catOrder={D:0,E:1,I:2,M:3};
+  return CARDS.filter(c=> (DECK.faction==="ALL"||c.player===DECK.faction) && (DECK.cat==="ALL"||c.cat===DECK.cat))
+    .sort((a,b)=> (facOrder[a.player]-facOrder[b.player]) || (catOrder[a.cat]-catOrder[b.cat]) || a.id.localeCompare(b.id));
+}
+function renderDeckGrid(){
+  const g=document.getElementById("deckGrid"); g.innerHTML="";
+  const list=deckList();
+  if(!list.length){ g.innerHTML=`<div class="empty">No cards match this filter.</div>`; return; }
+  list.forEach(c=> g.appendChild(staticCardEl(c)));
+}
+function drawCard(){
+  const list=deckList(); if(!list.length) return;
+  const c=list[Math.floor(Math.random()*list.length)];
+  const out=document.getElementById("drawOut"); out.innerHTML="";
+  out.appendChild(staticCardEl(c));
+}
+function openDeck(){
+  renderDeckFilters(); renderDeckGrid();
+  document.getElementById("deckSheet").classList.add("show");
+}
+
+/* =========================== SETUP / LOBBY =========================== */
+const SETUP={ n:2, assign:{USA:0,SVN:0,NVN:1,WC:null}, names:["Player 1","Player 2","Player 3","Player 4"] };
+const PRESETS={
+  solo:  {n:1, assign:{USA:0,SVN:0,NVN:0,WC:0}},
+  "2team":{n:2, assign:{USA:0,SVN:0,NVN:1,WC:1}},
+  "3p":  {n:3, assign:{USA:0,SVN:1,NVN:2,WC:null}},
+  "4p":  {n:4, assign:{USA:0,SVN:1,NVN:2,WC:3}},
+};
+
+function renderCount(){
+  document.querySelectorAll("#countRow button").forEach(b=>{
+    b.classList.toggle("on", +b.dataset.n===SETUP.n);
+  });
+}
+function renderNames(){
+  const nr=document.getElementById("nameRow"); nr.innerHTML="";
+  for(let i=0;i<SETUP.n;i++){
+    const inp=document.createElement("input");
+    inp.className="name-in"; inp.value=SETUP.names[i]; inp.placeholder="Player "+(i+1);
+    inp.oninput=()=>{ SETUP.names[i]=inp.value||("Player "+(i+1)); };
+    nr.appendChild(inp);
+  }
+}
+function renderAssign(){
+  const g=document.getElementById("assignGrid"); g.innerHTML="";
+  ORDER.forEach(f=>{
+    const wrap=document.createElement("div"); wrap.className="assign"; wrap.dataset.f=f;
+    let opts=`<option value="open">Open seat (pass &amp; play)</option>`;
+    for(let i=0;i<SETUP.n;i++){ opts+=`<option value="${i}">${SETUP.names[i]}</option>`; }
+    const cur=SETUP.assign[f];
+    wrap.innerHTML=`<div class="fn">${FACTIONS[f].name}</div>
+      <div class="fr">${FACTIONS[f].role}</div>
+      <select data-f="${f}">${opts}</select>`;
+    g.appendChild(wrap);
+    const sel=wrap.querySelector("select");
+    sel.value = (cur==null||cur>=SETUP.n) ? "open" : String(cur);
+    if(cur!=null && cur>=SETUP.n){ SETUP.assign[f]=null; }
+    sel.onchange=()=>{ SETUP.assign[f] = sel.value==="open" ? null : +sel.value; };
+  });
+}
+function applyPreset(p){
+  const cfg=PRESETS[p]; if(!cfg) return;
+  SETUP.n=cfg.n; SETUP.assign=Object.assign({},cfg.assign);
+  renderCount(); renderNames(); renderAssign();
+}
+function setCount(n){
+  SETUP.n=n;
+  // clamp any assignments that now exceed player count
+  ORDER.forEach(f=>{ if(SETUP.assign[f]!=null && SETUP.assign[f]>=n) SETUP.assign[f]=null; });
+  renderCount(); renderNames(); renderAssign();
+}
+function initSetup(){
+  document.querySelectorAll("#countRow button").forEach(b=> b.onclick=()=> setCount(+b.dataset.n));
+  document.querySelectorAll("#presetRow button").forEach(b=> b.onclick=()=> applyPreset(b.dataset.p));
+  applyPreset("2team");
+  document.getElementById("setup").classList.add("show");
+}
+function showSetup(){ document.getElementById("modal").classList.remove("show"); initSetup(); }
+
+/* =========================== START GAME =========================== */
+function startGame(){
+  S=freshState();
+  S.players = SETUP.names.slice(0, SETUP.n).map((nm,i)=> nm || ("Player "+(i+1)));
+  S.assign  = Object.assign({}, SETUP.assign);
+  S.teamMode = SETUP.n>=2;
+  document.getElementById("setup").classList.remove("show");
+  fireEvent(1961);
+  startTurn();
+  logMsg("EVENT","<b>1961: Counterinsurgency Era begins.</b> The struggle for the villages is on.",1961,true);
+  render();
+}
+
+/* =========================== BUTTON WIRING =========================== */
+document.getElementById("beginBtn").onclick=()=>{ startGame(); };
+document.getElementById("endTurnBtn").onclick=()=>{ endTurn(); };
+document.getElementById("verdictBtn").onclick=()=>{ if(S.gameOver){ finalVerdict(); } else { assess(); } };
+document.getElementById("deckBtn").onclick=()=>{ openDeck(); };
+document.getElementById("howBtn").onclick=()=>{ document.getElementById("howSheet").classList.add("show"); };
+document.getElementById("resetBtn").onclick=()=>{ if(confirm("Return to setup and start a new campaign?")){ showSetup(); } };
+document.getElementById("drawPile").onclick=()=>{ drawCard(); };
+document.querySelectorAll("[data-close]").forEach(b=> b.onclick=()=> document.getElementById(b.dataset.close).classList.remove("show"));
+document.getElementById("vClose").onclick=()=>{ document.getElementById("modal").classList.remove("show"); document.getElementById("vClose").textContent="Continue"; };
+document.getElementById("vRestart").onclick=()=>{ showSetup(); };
+
+initSetup();
+</script>
+</body>
+</html>
